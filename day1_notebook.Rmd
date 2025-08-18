@@ -64,6 +64,13 @@ $$\mathrm{posterior} = \frac{\mathrm{prior} \times \mathrm{likelihood}}{\mathrm{
 
 "Evidence" is a very confusing/misleading term. "Marginal likelihood" might be better. It's the likelihood/probability of the data appearing, marginal over ALL possible values of $\theta$
 
+# Priors and Information
+
+- What do priors look like?
+- priors as "beliefs"
+- "you're just making stuff up!"
+- the cycle of prior -> posterior -> prior
+
 # Comparing procedures (preview)
 
 ```{r}
@@ -81,3 +88,8 @@ summary(height_lm)
 summary(height_brm)
 ```
 
+# Where do we go from here?
+
+- Fitting mixed-effects models using `brms` and Stan
+- Functions and procedures for diagnosing fit, convergence, etc.
+- Functions and procedures for summarizing posteriors and making inferences
