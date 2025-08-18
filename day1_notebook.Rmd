@@ -1,0 +1,83 @@
+---
+title: "Bayesian Modeling and Simulation: Day 1"
+date: 2025-08-18
+---
+
+# Workshop overview
+
+# Today's outline
+
+- Why Bayes? Four major differences:
+  1. Theory/inference
+  2. Making the most of information
+  3. Model flexibility
+  4. Computation
+- Theory and inference overview
+  - review NHST
+  - Bayes' Theorem
+  - comparing inference procedures
+
+# Review NHST
+
+- The goals of Frequentists
+- The logic of Null Hypothesis Significance Testing
+- Dangers
+  - dichotomous thinking (all or nothing)
+  - misapplication (unintuitive)
+  - relatively inflexible/challenging mathematically
+  - "significance" as marketing
+- These can still happen with Bayes!
+  - false positives/negatives still happen, all or nothing logic can linger
+- Bayesian inference is not a silver bullet
+- it just provides an easier way out of the traps
+
+# Bayes' Theorem
+## Rain and clouds
+
+$p(\mathrm{rain})$ means: the (marginal) probability of rain occurring
+
+$p(\mathrm{rain, clouds})$ means: the (joint) probability of rain and clouds co-occurring
+
+$p(\mathrm{rain|clouds})$ means: the (conditional) probability of rain happening, if we look outside and see clouds
+
+So this means that using standard logic of probability, the probability that rain and clouds are both happening is equal to the probability that there are clouds right now, times the probability that rain occurs when there are clouds.
+
+$$p(\mathrm{rain, clouds}) = p(\mathrm{rain|clouds}) \times p(\mathrm{clouds})$$
+
+But we can also define this as the flip:
+
+$$p(\mathrm{rain, clouds}) = p(\mathrm{clouds|rain}) \times p(\mathrm{rain})$$
+
+So then it's simple algebra. Make the right-hand sides equivalent and divide both sides by $p(\mathrm{clouds})$, and you get:
+
+$$p(\mathrm{rain|clouds}) = \frac{p(\mathrm{rain}) \times p(\mathrm{clouds|rain})}{p(\mathrm{clouds})}$$
+
+## General form and terms
+
+This is an example of the more abstract Bayes' Theorem:
+
+$$p(\theta|D) = \frac{p(\theta) \times p(D|\theta)}{p(D)}$$
+
+We use labels to talk about these components:
+
+$$\mathrm{posterior} = \frac{\mathrm{prior} \times \mathrm{likelihood}}{\mathrm{evidence}}$$
+
+"Evidence" is a very confusing/misleading term. "Marginal likelihood" might be better. It's the likelihood/probability of the data appearing, marginal over ALL possible values of $\theta$
+
+# Comparing procedures (preview)
+
+```{r}
+library(brms)
+library(HistData)
+```
+
+```{r}
+height_lm <- lm(child ~ 1 + parent, data = Galton)
+height_brm <- brm(child ~ 1 + parent, data = Galton)
+```
+
+```{r}
+summary(height_lm)
+summary(height_brm)
+```
+
