@@ -83,8 +83,7 @@ galton_stan <- stan(
   data = galton_data,
   chains = 4,
   iter = 2000,
-  warmup = 1000,
-  init = 0
+  warmup = 1000
 )
 
 
@@ -102,23 +101,54 @@ galton_stan <- stan(
 
 ```{r}
 # fit plain lm() for comparison
-
+galton_lm <- lm(child ~ 1 + parent, Galton)
+summary(galton_lm)
+str(galton_lm)
 
 # stan fit objects are complex!
 str(galton_stan)
 galton_stan@inits
 
 summary(galton_stan)
+summary(galton_stan)$summary
 
 # extract() function gets posteriors (chains)
 str(extract(galton_stan))
 
-galton_posterior <- extract(galton_stan, 
+galton_posterior_withwarmup <- extract(galton_stan, 
                           pars = c("intercept", "slope"),
                           inc_warmup = TRUE,
                           permuted = FALSE)
 
+mcmc_trace(galton_posterior_withwarmup)
+
+mcmc_trace(galton_stan)
+
+galton_posterior <- extract(galton_stan, 
+                          pars = c("intercept", "slope"),
+                          inc_warmup = FALSE,
+                          permuted = FALSE)
+
 mcmc_trace(galton_posterior)
+
+galton_slope_posterior <- extract(galton_stan)$slope
+summary(galton_slope_posterior)
+
+confint(galton_lm, parm = "parent", level = .95)
+quantile(galton_slope_posterior, c(.025, .975))
+
+ggplot(data = NULL, aes(galton_slope_posterior)) + geom_density()
+
+ggplot(data = NULL, aes(galton_slope_posterior)) + geom_density() +
+  geom_vline(xintercept = quantile(galton_slope_posterior, c(.025, .975)), color = "red")
+
+hdi_interval <- hdi(galton_slope_posterior, credMass = .89)
+
+ggplot(data = NULL, aes(galton_slope_posterior)) + geom_density() +
+  geom_vline(xintercept = hdi_interval, color = "red")
+
+
+
 ```
 
 
@@ -127,4 +157,32 @@ mcmc_trace(galton_posterior)
   - play with init, warmup
   - play with priors
 
+```{r}
+
+galton_data <- list(
+  N = nrow(Galton),
+  x = Galton$parent,
+  y = Galton$child,
+  location_intercept = 25,
+  scale_intercept = 100,
+  scale_slope = 20
+)
+
+
+galton_stan <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 2000,
+  warmup = 1000
+)
+
+# 1. play with warmup length
+
+# 2. play with keeper iterations
+
+# 3. play around with priors
+
+
+```
 
