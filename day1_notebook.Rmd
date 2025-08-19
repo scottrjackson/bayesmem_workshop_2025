@@ -12,6 +12,7 @@ date: 2025-08-18
   2. Making the most of information
   3. Model flexibility
   4. Computation
+  
 - Theory and inference overview
   - review NHST
   - Bayes' Theorem
@@ -66,6 +67,7 @@ $$\mathrm{posterior} = \frac{\mathrm{prior} \times \mathrm{likelihood}}{\mathrm{
 
 # Priors and Information
 
+- The Good and Bad parts of Bayesian analysis (depending on your perspective)
 - What do priors look like?
 - priors as "beliefs"
 - "you're just making stuff up!"
@@ -76,16 +78,25 @@ $$\mathrm{posterior} = \frac{\mathrm{prior} \times \mathrm{likelihood}}{\mathrm{
 ```{r}
 library(brms)
 library(HistData)
+library(ggplot2)
 ```
 
-```{r}
+```{r, eval = FALSE}
+ggplot(Galton, aes(parent, child)) + geom_jitter() + geom_smooth(method = "lm")
+
+system.time(
 height_lm <- lm(child ~ 1 + parent, data = Galton)
+)
+
+system.time(
 height_brm <- brm(child ~ 1 + parent, data = Galton)
+)
 ```
 
-```{r}
+```{r, eval = FALSE}
 summary(height_lm)
 summary(height_brm)
+pairs(height_brm)
 ```
 
 # Where do we go from here?

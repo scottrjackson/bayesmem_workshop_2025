@@ -1,0 +1,84 @@
+---
+title: "Bayesian Modeling and Simulation: Day 2"
+date: 2025-08-19
+---
+
+# Questions/review
+
+- ?
+
+# Today's agenda
+
+- Installing all the stuff
+- Stan basics:
+  - creating a .stan file
+  - running a Stan model in R
+- MCMC basics
+  - chains, iter
+  - inits
+  - warm-up/burn-in
+- Examining posterior samples
+  - quantiles
+  - HPDI
+- Playing with our simple regression
+  - play with init, warmup
+  - play with priors
+
+# Installing all the stuff
+
+- RTools if you're on windows:
+
+https://cran.r-project.org/bin/windows/Rtools/
+
+LOTS of packages out there. I actually recommend loading as few as needed at a time. Many packages overlap in functionality and functions, and you can sometimes get unexpected things happening.
+
+Core packages for running Stan:
+
+```{r, eval = FALSE}
+install.packages(c("rstan", "rstanarm"))
+```
+
+Handy additional packages we'll use:
+
+```{r, eval = FALSE}
+install.packages(c("bayesplot", "brms", "HDIntverval"))
+```
+
+For the "Statistical Rethinking" textbook (not on CRAN):
+
+```{r, eval = FALSE}
+devtools::install_github("rmcelreath/rethinking")
+```
+
+## Loading for today
+
+Today we will just load the following:
+
+```{r}
+library(rstan)
+library(rstanarm)
+library(ggplot2)
+library(bayesplot)
+library(HDInterval)
+library(HistData)
+```
+
+
+# Stan basics
+  - creating a .stan file
+  - running a Stan model in R
+
+# MCMC basics
+  - chains, iter
+  - inits
+  - warm-up/burn-in
+
+# Examining posterior samples
+  - quantiles
+  - HPDI
+
+# Playing with our simple regression
+  - play with init, warmup
+  - play with priors
+
+
