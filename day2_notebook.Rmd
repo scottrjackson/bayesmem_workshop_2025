@@ -178,10 +178,98 @@ galton_stan <- stan(
 )
 
 # 1. play with warmup length
+mcmc_trace(galton_posterior_withwarmup) +
+  xlim(0, 300) +
+  geom_vline(xintercept = c(0, 10, 100, 200), color = "red")
+
+galton_stan_10warmup <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 2000,
+  warmup = 0
+)
+
+mcmc_trace(galton_stan_nowarmup)
+
+galton_stan_100warmup <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 2000,
+  warmup = 100
+)
+
+mcmc_trace(galton_stan_100warmup)
+
+galton_stan_200warmup <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 2000,
+  warmup = 200
+)
+
+mcmc_trace(galton_stan_200warmup)
 
 # 2. play with keeper iterations
 
+galton_stan_10K <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 10000,
+  warmup = 1000
+)
+
+galton_slope_posterior_10K <- extract(galton_stan_10K)$slope
+summary(galton_slope_posterior_10K)
+
+hdi_interval <- hdi(galton_slope_posterior_10K, credMass = .95)
+
+ggplot(data = NULL, aes(galton_slope_posterior_10K)) + geom_density() +
+  geom_vline(xintercept = hdi_interval, color = "red") +
+  geom_density(aes(x = galton_slope_posterior),
+               color = "steelblue", linetype = 2,
+               alpha = .2)
+
+ggplot(data = NULL, aes(galton_slope_posterior_10K)) + geom_density() +
+  geom_vline(xintercept = hdi_interval, color = "red") +
+  geom_density(aes(x = sample(galton_slope_posterior_10K,
+                              100)),
+               color = "steelblue", linetype = 2,
+               alpha = .2)
+
+
 # 3. play around with priors
+galton_data2 <- list(
+  N = nrow(Galton),
+  x = Galton$parent,
+  y = Galton$child,
+  location_intercept = 25,
+  scale_intercept = 100,
+  scale_slope = .1 # narrow prior around 0
+)
+
+galton_stan2 <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data2,
+  chains = 4,
+  iter = 2000,
+  warmup = 1000
+)
+
+galton_slope_posterior2 <- extract(galton_stan2)$slope
+summary(galton_slope_posterior2)
+
+hdi_interval <- hdi(galton_slope_posterior2, credMass = .95)
+
+ggplot(data = NULL, aes(galton_slope_posterior2)) + geom_density() +
+  geom_vline(xintercept = hdi_interval, color = "red") +
+  geom_density(aes(x = galton_slope_posterior),
+               color = "steelblue", linetype = 2,
+               alpha = .2)
+
 
 
 ```
