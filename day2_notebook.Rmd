@@ -190,7 +190,7 @@ galton_stan_10warmup <- stan(
   warmup = 0
 )
 
-mcmc_trace(galton_stan_nowarmup)
+mcmc_trace(galton_stan_10warmup)
 
 galton_stan_100warmup <- stan(
   file = "simple_regression_newpars.stan",
@@ -268,8 +268,7 @@ ggplot(data = NULL, aes(galton_slope_posterior2)) + geom_density() +
   geom_vline(xintercept = hdi_interval, color = "red") +
   geom_density(aes(x = galton_slope_posterior),
                color = "steelblue", linetype = 2,
-               alpha = .2)
-
+               alpha = .2) + xlim(-0.1, 0.8)
 
 
 ```
