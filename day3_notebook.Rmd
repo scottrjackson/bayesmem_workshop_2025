@@ -16,7 +16,53 @@ date: 2025-08-20
 - walk through the "simple regression" Stan file
 - Spend a little more time playing with priors and other settings
 
+# Load some packages
+
+```{r}
+library(tidyverse)
+library(rstan)
+library(rstanarm)
+library(lme4)
+library(HistData)
+library(brms)
+
+```
+
+
+
+```{r}
+# fit plain lm() for comparison
+galton_lm <- lm(child ~ 1 + parent, Galton)
+summary(galton_lm)
+str(galton_lm)
+```
+
+Basic Stan model
+
+```{r}
+galton_data <- list(
+  N = nrow(Galton),
+  x = Galton$parent,
+  y = Galton$child,
+  location_intercept = 25,
+  scale_intercept = 100,
+  scale_slope = 20
+)
+
+galton_stan <- stan(
+  file = "simple_regression_newpars.stan",
+  data = galton_data,
+  chains = 4,
+  iter = 2000,
+  warmup = 1000
+)
+
+```
+
+
 # The `brms` package and adventures in parameterization
 
 
 # Fitting MEMs with `brms` and Stan
+
+
