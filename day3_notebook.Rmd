@@ -1,0 +1,22 @@
+---
+title: "Bayesian Modeling and Simulation: Day 3"
+date: 2025-08-20
+---
+
+# Agenda
+
+- Review, recap
+- Spend some more time playing with priors, etc. with a simple model
+- Start using `brms` to fit MEMs, comparing with `lme4`
+- Discuss the challenges of parameterization
+
+# Review & recap
+
+- Michael's question about "between Bayesian and Frequentist"
+- walk through the "simple regression" Stan file
+- Spend a little more time playing with priors and other settings
+
+# The `brms` package and adventures in parameterization
+
+
+# Fitting MEMs with `brms` and Stan
