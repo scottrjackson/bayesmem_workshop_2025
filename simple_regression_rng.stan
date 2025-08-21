@@ -1,6 +1,6 @@
-// model adapted from: 
+// model initially adapted from: 
 // https://mc-stan.org/docs/stan-users-guide/regression.html
-// added parameters for setting explicit priors
+// using generated quantities to simulate data
 
 data {
   int<lower=0> N;

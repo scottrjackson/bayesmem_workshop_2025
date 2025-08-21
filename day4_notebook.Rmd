@@ -28,7 +28,6 @@ galton_lm <- lm(child ~ 1 + parent, data = Galton)
 summary(galton_lm)$coef
 summary(galton_lm)$sigma
 
-
 random_parents <- rnorm(1000, 68, 1.78)
 galton_sim_data <- list(
   N = 1000,
@@ -49,9 +48,17 @@ galton_sim_stan <- stan(
 
 galton_sims_df <- as_draws_df(galton_sim_stan)
 colnames(galton_sims_df)
+ncol(galton_sims_df)
+nrow(galton_sims_df)
+ggplot(galton_sims_df, aes(`y_sim[1]`)) + geom_histogram()
 
 plot(as.numeric(galton_sims_df[1, 1:1000]) ~ random_parents)
+plot(as.numeric(galton_sims_df[4, 1:1000]) ~ random_parents)
+```
 
+# Looking at priors
+
+```{r}
 default_priors_lm <- default_prior(child ~ 1 + parent, data = Galton)
 default_priors_lm
 all_priors <- c(#set_prior("flat", class = "b"),
