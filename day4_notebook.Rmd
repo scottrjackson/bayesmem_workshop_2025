@@ -110,10 +110,7 @@ sim_stanfit <- stan(
 ```{r}
 london <- read_csv("nat_similarity_lex.csv")
 
-default_prior(logRT ~ 1 + related + (1|subject_id), data = london)
-london_priors <- c(
-  set_prior("normal(0, .01)", class = "b", coef = "relatedunrelated")
-)
+# fit with default priors
 london_brm1 <- brm(logRT ~ 1 + related + (1|subject_id), data = london,
                    chains = 4, warmup = 2000, iter = 4000)
 summary(london_brm1)
@@ -125,6 +122,11 @@ related_hpdi <- hdi(brm1_posterior$b_relatedunrelated)
 ggplot(brm1_posterior, aes(b_relatedunrelated)) + geom_histogram() +
   geom_vline(xintercept = related_hpdi, color = "red", linetype = 2)
 
+# try changing priors
+default_prior(logRT ~ 1 + related + (1|subject_id), data = london)
+london_priors <- c(
+  set_prior("normal(0, 10)", class = "b", coef = "relatedunrelated")
+)
 london_brm1_newpriors <- brm(logRT ~ 1 + related + (1|subject_id), data = london,
                    chains = 4, warmup = 2000, iter = 4000,
                    prior = london_priors)
