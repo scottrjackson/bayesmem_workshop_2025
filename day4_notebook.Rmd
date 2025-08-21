@@ -1,0 +1,86 @@
+---
+title: "Bayesian Modeling and Simulation: Day 4"
+date: 2025-08-21
+---
+
+# Agenda
+
+- Simulate!
+- Fit more models and play with priors in `brms`
+
+# Load packages
+
+```{r}
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(lme4)
+library(tidyverse)
+library(brms)
+library(HDInterval)
+library(HistData)
+```
+
+# Simulating from a Stan model
+
+```{r}
+galton_lm <- lm(child ~ 1 + parent, data = Galton)
+summary(galton_lm)$coef
+summary(galton_lm)$sigma
+
+
+random_parents <- rnorm(1000, 68, 1.78)
+galton_sim_data <- list(
+  N = 1000,
+  x = random_parents,
+  alpha = 24,
+  beta = 0.65,
+  sigma = 2.24
+)
+
+galton_sim_stan <- stan(
+  file = "simple_regression_rng.stan",
+  data = galton_sim_data,
+  chains = 4,
+  warmup = 1000,
+  iter = 2000,
+  algorithm = "Fixed_param"
+)
+
+galton_sims_df <- as_draws_df(galton_sim_stan)
+colnames(galton_sims_df)
+
+plot(as.numeric(galton_sims_df[1, 1:1000]) ~ random_parents)
+
+default_priors_lm <- default_prior(child ~ 1 + parent, data = Galton)
+default_priors_lm
+all_priors <- c(#set_prior("flat", class = "b"),
+                set_prior("normal(24,50)", class = "Intercept"), 
+                set_prior("normal(0.6,10)", class = "b", coef = "parent"),
+                set_prior("student_t(3, 0, 3)", class = "sigma", lb = 0))
+
+sim_priors <- c(#set_prior("flat", class = "b"),
+  set_prior("normal(68.2, 2.8)", class = "Intercept"), 
+  set_prior("normal(0.65, 0.04)", class = "b", coef = "parent"),
+  set_prior("normal(2.24, 0.05)", class = "sigma", lb = 0))
+
+galton_brm <- brm(child ~ 1 + parent, data = Galton,
+                  chains = 4, warmup = 1000, iter = 2000)
+
+galton_brm_sims <- brm(child ~ 1 + parent, data = Galton,
+                  chains = 4, warmup = 1000, iter = 2000,
+                  prior = sim_priors, sample_prior = "only")
+
+prior_summary(galton_brm)
+prior_summary(galton_brm_sims)
+
+summary(galton_brm)
+summary(galton_brm_sims)
+
+sim_stanfit <- stan(
+  model_code = stancode(galton_brm_sims),
+  data = standata(galton_brm_sims),
+  chains = 4, warmup = 1000, iter = 2000)
+
+```
+
