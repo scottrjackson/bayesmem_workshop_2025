@@ -113,7 +113,10 @@ london <- read_csv("nat_similarity_lex.csv")
 # fit with default priors
 london_brm1 <- brm(logRT ~ 1 + related + (1|subject_id), data = london,
                    chains = 4, warmup = 2000, iter = 4000)
+london_lmer1 <- lmer(logRT ~ 1 + related + (1|subject_id), 
+                     data = london)
 summary(london_brm1)
+summary(london_lmer1)
 brm1_posterior <- as_draws_df(london_brm1)
 head(brm1_posterior)
 nrow(brm1_posterior)
@@ -125,7 +128,7 @@ ggplot(brm1_posterior, aes(b_relatedunrelated)) + geom_histogram() +
 # try changing priors
 default_prior(logRT ~ 1 + related + (1|subject_id), data = london)
 london_priors <- c(
-  set_prior("normal(0, 10)", class = "b", coef = "relatedunrelated")
+  set_prior("normal(0, 2)", class = "b", coef = "relatedunrelated")
 )
 london_brm1_newpriors <- brm(logRT ~ 1 + related + (1|subject_id), data = london,
                    chains = 4, warmup = 2000, iter = 4000,
@@ -141,6 +144,55 @@ ggplot(newprior_posterior, aes(b_relatedunrelated)) + geom_density() +
   geom_vline(xintercept = related_hpdi, color = "red", linetype = 2) +
   geom_density(aes(x = brm1_posterior$b_relatedunrelated), color = "blue")
 
+
+```
+
+Random slope
+
+```{r}
+# fit with default priors
+london_brm2 <- brm(logRT ~ 1 + related + (1+related|subject_id), data = london,
+                   chains = 4, warmup = 2000, iter = 4000)
+london_lmer2 <- lmer(logRT ~ 1 + related + (1+related|subject_id), 
+                     data = london)
+summary(london_brm2)
+summary(london_lmer2)
+brm2_posterior <- as_draws_df(london_brm2)
+head(brm2_posterior)
+nrow(brm2_posterior)
+summary(brm2_posterior)
+related_hpdi <- hdi(brm2_posterior$b_relatedunrelated)
+ggplot(brm2_posterior, aes(b_relatedunrelated)) + geom_histogram() +
+  geom_vline(xintercept = related_hpdi, color = "red", linetype = 2)
+
+# try changing priors
+default_prior(logRT ~ 1 + related + (1+related|subject_id), data = london)
+london_priors <- c(
+  set_prior("normal(0, 2)", class = "b", coef = "relatedunrelated"),
+  set_prior("normal(0.05, 0.001)", class = "sd", coef = "relatedunrelated", group = "subject_id")
+)
+london_priors
+london_brm2_newpriors <- brm(logRT ~ 1 + related + (1+related|subject_id), data = london,
+                   chains = 4, warmup = 2000, iter = 4000,
+                   prior = london_priors)
+prior_summary(london_brm2_newpriors)
+
+newprior_posterior <- as_draws_df(london_brm2_newpriors)
+head(newprior_posterior)
+colnames(newprior_posterior)
+nrow(newprior_posterior)
+summary(newprior_posterior)
+related_hpdi <- hdi(newprior_posterior$b_relatedunrelated)
+ggplot(newprior_posterior, aes(b_relatedunrelated)) + geom_density() +
+  geom_vline(xintercept = related_hpdi, color = "red", linetype = 2) +
+  geom_density(aes(x = brm2_posterior$b_relatedunrelated), color = "blue")
+
+randomslope_hpdi <- hdi(newprior_posterior$sd_subject_id__relatedunrelated)
+
+ggplot(brm2_posterior, aes(sd_subject_id__relatedunrelated)) + geom_density() 
+ggplot(newprior_posterior, aes(sd_subject_id__relatedunrelated)) + geom_density() +
+  geom_vline(xintercept = randomslope_hpdi, color = "red", linetype = 2) +
+  geom_density(aes(x = brm2_posterior$sd_subject_id__relatedunrelated), color = "blue")
 
 ```
 

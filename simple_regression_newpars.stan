@@ -8,6 +8,7 @@ data {
   vector[N] y;
   real location_intercept;
   real scale_intercept;
+  real location_slope;
   real scale_slope;
 }
 
@@ -20,7 +21,7 @@ parameters {
 model {
   // priors
   intercept ~ normal(location_intercept, scale_intercept);
-  slope ~ normal(0., scale_slope);
+  slope ~ normal(location_slope, scale_slope);
   
   // likelihood
   y ~ normal(intercept + slope * x, sigma);
