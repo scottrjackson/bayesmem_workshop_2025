@@ -78,14 +78,18 @@ mcmc_trace(galton_stan_warm10)
 Using new model with place for specifying the mean of the prior on slope
 
 ```{r}
+galton_slope_mean_se <- summary(galton_lm)$coefficients[2, 1:2]
+
+
+
 galton_data <- list(
   N = nrow(Galton),
   x = Galton$parent,
   y = Galton$child,
-  location_intercept = 23.9,
+  location_intercept = 20,
   scale_intercept = 100,
-  location_slope = 0,
-  scale_slope = 20
+  location_slope = 2,
+  scale_slope = .1
 )
 
 galton_stan <- stan(
@@ -97,19 +101,54 @@ galton_stan <- stan(
   #refresh = 0 # if you don't want to see progress
 )
 
+mcmc_trace(galton_stan)
+
 summary(galton_stan, pars = c("intercept", "slope"))$summary
-
+summary(galton_lm)$coef
 galton_posterior <- data.frame(slope = extract(galton_stan)$slope)
-
 ggplot(galton_posterior, aes(slope)) + geom_density()
+
++ 
+  geom_line(aes(x = seq(.4, .8, .01), y = dnorm(seq(.4, .8, .01), 
+                                            mean = galton_slope_mean_se[1],
+                                            sd = galton_slope_mean_se[2])))
 
 ```
 
 
 
-# The `brms` package and adventures in parameterization
-
-
 # Fitting MEMs with `brms` and Stan
+
+```{r}
+
+london <- read_csv("nat_similarity_lex.csv")
+colnames(london)
+
+london_lmer <- lmer(logRT ~ 1 + related * repetition + 
+                      (1 + related * repetition|subject_id),
+                    data = london)
+
+summary(london_lmer)
+
+london_brm <- brm(logRT ~ 1 + related * repetition + 
+                      (1 + related * repetition|subject_id),
+                    data = london,
+                  chains = 4,
+                  iter = 4000,
+                  warmup = 2000)
+
+summary(london_lmer)
+summary(london_brm)
+```
+
+# Adventures in parameterization
+
+```{r}
+stancode(london_brm)
+standata(london_brm)
+```
+
+
+
 
 
