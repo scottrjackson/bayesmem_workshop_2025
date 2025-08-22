@@ -1,0 +1,165 @@
+---
+title: "Bayesian Modeling and Simulation: Day 5"
+date: 2025-08-22
+---
+
+# Load packages
+
+```{r}
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(lme4)
+library(tidyverse)
+library(brms)
+library(HDInterval)
+library(HistData)
+```
+
+# An analysis procedure
+
+1. Explore, visualize, make decisions about things like:
+  - transformations
+  - exclusions
+2. Decide ("preregister") based on theory & practice:
+  - your "ideal" target model
+    - for MEMs, this is typically a "maximal" model of random effects
+  - what your hypotheses and quantities of interest are
+  - what kinds of effect magnitudes you might expect
+3. Start model-building
+  - start with simple models, (g)lm(), (g)lmer
+  - try to make sense of things as you go
+  - relevel factors (if you haven't already) to be more intuitive/sensible
+  - if you are trying to decide between alternatives, like two different formulations of a predictor:
+    - use model fit stats like AIC to help you pick
+    - but make sure to revisit when you have the full model later
+  - note where you have model-fitting issues (in lmer, for example)
+    - fit warnings
+    - "perfect" 1/-1 correlations between random effects
+4. Fit the "best" model you can
+  - basically as close to your "ideal" model, adjusted based on what you found in Step 3
+5. Fit a Bayesian model
+  - review the default priors using `default_prior()` and your model formula
+  - decide whether you would like to alter any
+    - possibly picking weakly informative priors instead of "flat" priors
+    - possibly using other priors if you have reasons
+    - this page has a nice, thorough discussion: https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  - fit a model (using `brms`, or `stan` directly if you have a .stan file ready to go)
+  - heed warnings that suggest you may need to increase your warm-up iterations or sampling iterations
+    - this includes if you see R-hat values that are not close to 1
+  - look at trace plots if you're worried about how the chains look, whether they're "mixing" properly, etc.
+6. Interpret model results
+  - It's all about the posteriors!
+  - Use something like `as_draws_df()` to extract the posterior samples for all of the parameters of interest
+  - Each of this is just a sample of values, which are distributed according to the estimated posterior probability distribution -- these are your results!
+  - Use standard ways of examining samples, like numeric summaries, histogram/density plots, etc.
+  - The mean of each sample is usually interpreted similar to a point estimate, but they may be less than ideal summaries if your distribution is asymmetrical.
+  - Using HPDI (Highest Posterial Density Interval) may be preferable to taking 95% quantiles. In other words, getting the interval between the 2.5% quantile and 97.5% quantile gives you the "middle" 95% values of the distribution, but a 95% HPDI gives you the 95% "most credible" values (aka "95% credible interval" vs "confidence" interval). The `hdi()` function from the HDInterval package is easy to use for this.
+  - Perhaps the most straightforward way to discuss results is to show where the 95% CI is (whichever "C" you pick). If it's all above zero, that's roughly analogous to a "significant" result.
+  - If you would like to actually make a claim that an effect is "essentially zero", then you may need to define a reasonably narrow "region of practical equivalence" (ROPE, see references from Kruschke on this technique). If your X% most likely values fall inside the ROPE, you can conclude that the most likely estimates are "practically" zero, if that is something worth arguing for.
+
+```{r}
+carmen <- read_csv("summer25_stat_workshop_Canphon_parti24.csv")
+carmen$logLook <- log(carmen$TotalLook)
+carmen$logTrial <- log(carmen$Trial)
+carmen <- filter(carmen, ! SLx %in% "sup")
+length(unique(carmen$SubjectID))
+length(unique(carmen$StimName))
+
+carmen %>% group_by(SubjectID, SLx, GapType) %>% summarize(count = n()) %>% arrange(count)
+carmen %>% group_by(StimName, SLx, GapType) %>% summarize(count = n()) %>% arrange(count)
+
+carmen <- separate(carmen, StimName, c("set", "condition", "leg"), sep = "_")
+colnames(carmen)
+length(unique(carmen$set))
+
+carmen_lmer_full <- lmer(logLook ~ 1 + logTrial + SLx * GapType + 
+                           (1 + logTrial + SLx * GapType|SubjectID) + 
+                           (1 + logTrial + SLx * GapType|set),
+                         data = carmen)
+summary(carmen_lmer_full)
+```
+
+# A simulation procedure
+
+1. Preliminaries
+  - Before you can figure out what exactly to simulate, you may need to fit some models to real data, research plausible effect sizes, etc.
+2. Decide on your model
+  - What is the model you want to use to simulate your data?
+  - This should typically be the model you intend to use to analyze your data, unless you are intentionally looking at how analysis with a "wrong" model turns out.
+3. Decide on the parameter values for your model, which will determine what the simulated data looks like.
+  - If these are all based on the results of a model, it's sort of like doing a "retrospective" power analysis.
+  - You can use a mix of "observed" and "hypothetical" values, or just make them all up, it's just up to you and what you're trying to check.
+  - Note that the "Intercept" prior for `brms` isn't really a prior on the "b_Intercept" (unless you have standardized all of your variables), it's more like a prior on the *marginal* distribution of the dependent variable. Or if this helps: if you standardize your variable, this "Intercept" would have a distribution around normal(0, 1), assuming you're working with a continuous, normally distributed DV.
+4. Specify all of your parameter values as *priors*, using an interface like `brms` to be able to set priors.
+5. Fit a Bayesian model, but *only sample from the priors*
+  - This model can be "fit" to real predictors or made-up predictor values.
+6. Examine the "posteriors", which are really just samples from the prior distributions
+  - If they don't look like the distributions you expected based on how you meant to set up your priors, some troubleshooting may be needed. Setting arbitrary priors may not be guaranteed to work.
+7. Use "posterior prediction" methods to simulate DV values based on this model of sampled priors. This is like a "prior prediction" model, but since you have picked strong priors, it has the effect of generating plausible data from the specified model.
+  - The `posterior_predict()` function from `brms` works well for this.
+  - You end up with as many simulated data sets (of DV values) as you carried out samples.
+  - By default, `p
+8. Process/analyze these simulated data sets
+  - You may want to just inspect these to see if your model is generating plausible values. In other words, this can be a nice way to check what your model is doing. But if this is your only purpose, you could just use `posterior_predict()` on your regular model fitted to actual data, instead of the model with very strong priors.
+  - Or you may want to loop over all of these data sets and perform some procedure. But you have ultimate flexibility in what you want to do.
+  - For example, you could fit an lmer() model to each, and look for a critical value, like whether a particular effect has a t > 2, and use it like a power analysis.
+  - Or you could fit a Bayesian model each time (which could take a very long time, but could be possible) to look for a particular result as well, like if you're trying to figure out what it would take in order to show an effect entirely within a ROPE.
+  
+```{r}
+carmen_base_fit <- brm(logLook ~ 1 + logTrial + SLx * GapType + 
+                             (1 + logTrial + SLx * GapType|SubjectID) + 
+                             (1 + logTrial + SLx * GapType|set), 
+                           data = carmen,
+                           chains = 4, warmup = 2000, iter = 4000)
+# save(carmen_base_fit, file = "carmen_base_fit.RData")
+# load("carmen_base_fit.RData")
+base_posteriors <- as_draws_df(carmen_base_fit)
+colnames(base_posteriors)
+mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[1:4])
+mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[5:8])
+mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[9:12])
+mcmc_trace(carmen_base_fit, pars = c(colnames(base_posteriors)[13:15], "sigma"))
+
+summary(carmen_lmer_full)
+summary(carmen_base_fit)
+
+default_prior(logLook ~ 1 + logTrial + SLx * GapType + 
+                           (1 + logTrial + SLx * GapType|SubjectID) + 
+                           (1 + logTrial + SLx * GapType|set),
+                         data = carmen)
+
+# for the "Intercept" prior
+mean(carmen$logLook)
+sd(carmen$logLook)
+
+sim_priors <- c(
+  # marginal "Intercept"
+  set_prior("normal(9.69, 1)", class = "Intercept"),
+  # "fixed effects"
+  set_prior("", class = "b", coef = "logTrial"),
+  set_prior("", class = "b", coef = "GapTypeLab"),
+  set_prior("", class = "b", coef = "SLxSL3"),
+  set_prior("", class = "b", coef = "SLxSL3:GapTypeLab"),
+  # "random effects"
+  # subject-level
+  set_prior("", class = "sd", coef = "Intercept", group = "SubjectID"),
+  set_prior("", class = "sd", coef = "logTrial", group = "SubjectID"),
+  set_prior("", class = "sd", coef = "GapTypeLab", group = "SubjectID"),
+  set_prior("", class = "sd", coef = "SLxSL3", group = "SubjectID"),
+  set_prior("", class = "sd", coef = "SLxSL3:GapTypeLab", group = "SubjectID"),
+  # set-level
+  set_prior("", class = "sd", coef = "Intercept", group = "set"),
+  set_prior("", class = "sd", coef = "logTrial", group = "set"),
+  set_prior("", class = "sd", coef = "GapTypeLab", group = "set"),
+  set_prior("", class = "sd", coef = "SLxSL3", group = "set"),
+  set_prior("", class = "sd", coef = "SLxSL3:GapTypeLab", group = "set")
+)
+
+
+
+
+                           prior = sim_priors, sample_prior = "only")
+
+```
+
