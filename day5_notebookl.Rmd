@@ -99,7 +99,7 @@ summary(carmen_lmer_full)
 7. Use "posterior prediction" methods to simulate DV values based on this model of sampled priors. This is like a "prior prediction" model, but since you have picked strong priors, it has the effect of generating plausible data from the specified model.
   - The `posterior_predict()` function from `brms` works well for this.
   - You end up with as many simulated data sets (of DV values) as you carried out samples.
-  - By default, `p
+  - By default, `posterior_predict()` generates using the data you fit the simulated priors to, but you can pass new data as well.
 8. Process/analyze these simulated data sets
   - You may want to just inspect these to see if your model is generating plausible values. In other words, this can be a nice way to check what your model is doing. But if this is your only purpose, you could just use `posterior_predict()` on your regular model fitted to actual data, instead of the model with very strong priors.
   - Or you may want to loop over all of these data sets and perform some procedure. But you have ultimate flexibility in what you want to do.
@@ -107,13 +107,14 @@ summary(carmen_lmer_full)
   - Or you could fit a Bayesian model each time (which could take a very long time, but could be possible) to look for a particular result as well, like if you're trying to figure out what it would take in order to show an effect entirely within a ROPE.
   
 ```{r}
+# excluding set random effects for now
 carmen_base_fit <- brm(logLook ~ 1 + logTrial + SLx * GapType + 
-                             (1 + logTrial + SLx * GapType|SubjectID) + 
-                             (1 + logTrial + SLx * GapType|set), 
+                             (1 + logTrial + SLx * GapType|SubjectID), #+ 
+                             #(1 + logTrial + SLx * GapType|set), 
                            data = carmen,
                            chains = 4, warmup = 2000, iter = 4000)
-# save(carmen_base_fit, file = "carmen_base_fit.RData")
-# load("carmen_base_fit.RData")
+save(carmen_base_fit, file = "carmen_base_fit_smaller.RData")
+load("carmen_base_fit_smaller.RData")
 base_posteriors <- as_draws_df(carmen_base_fit)
 colnames(base_posteriors)
 mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[1:4])
@@ -121,8 +122,15 @@ mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[5:8])
 mcmc_trace(carmen_base_fit, pars = colnames(base_posteriors)[9:12])
 mcmc_trace(carmen_base_fit, pars = c(colnames(base_posteriors)[13:15], "sigma"))
 
-summary(carmen_lmer_full)
+carmen_lmer_withoutset <- lmer(logLook ~ 1 + logTrial + SLx * GapType + 
+                             (1 + logTrial + SLx * GapType|SubjectID), 
+                           data = carmen)
+# summary(carmen_lmer_full)
+summary(carmen_lmer_withoutset)
+
 summary(carmen_base_fit)
+
+prior_summary(carmen_base_fit)
 
 default_prior(logLook ~ 1 + logTrial + SLx * GapType + 
                            (1 + logTrial + SLx * GapType|SubjectID) + 
@@ -137,29 +145,28 @@ sim_priors <- c(
   # marginal "Intercept"
   set_prior("normal(9.69, 1)", class = "Intercept"),
   # "fixed effects"
-  set_prior("", class = "b", coef = "logTrial"),
-  set_prior("", class = "b", coef = "GapTypeLab"),
-  set_prior("", class = "b", coef = "SLxSL3"),
-  set_prior("", class = "b", coef = "SLxSL3:GapTypeLab"),
+  set_prior("normal(-0.51, 0.05)", class = "b", coef = "logTrial"),
+  set_prior("normal(-0.04, 0.068)", class = "b", coef = "GapTypeLab"),
+  set_prior("normal(-0.083, 0.07)", class = "b", coef = "SLxSL3"),
+  set_prior("normal(0.19, 0.10)", class = "b", coef = "SLxSL3:GapTypeLab"),
   # "random effects"
   # subject-level
-  set_prior("", class = "sd", coef = "Intercept", group = "SubjectID"),
-  set_prior("", class = "sd", coef = "logTrial", group = "SubjectID"),
-  set_prior("", class = "sd", coef = "GapTypeLab", group = "SubjectID"),
-  set_prior("", class = "sd", coef = "SLxSL3", group = "SubjectID"),
-  set_prior("", class = "sd", coef = "SLxSL3:GapTypeLab", group = "SubjectID"),
+  set_prior("normal(0, 0.84)", class = "sd", coef = "Intercept", group = "SubjectID"),
+  set_prior("normal(0, 0.36)", class = "sd", coef = "logTrial", group = "SubjectID"),
+  set_prior("normal(0, 0.09)", class = "sd", coef = "GapTypeLab", group = "SubjectID"),
+  set_prior("normal(0, 0.07)", class = "sd", coef = "SLxSL3", group = "SubjectID"),
+  set_prior("normal(0, 0.13)", class = "sd", coef = "SLxSL3:GapTypeLab", group = "SubjectID") #,
   # set-level
-  set_prior("", class = "sd", coef = "Intercept", group = "set"),
-  set_prior("", class = "sd", coef = "logTrial", group = "set"),
-  set_prior("", class = "sd", coef = "GapTypeLab", group = "set"),
-  set_prior("", class = "sd", coef = "SLxSL3", group = "set"),
-  set_prior("", class = "sd", coef = "SLxSL3:GapTypeLab", group = "set")
+  # set_prior("", class = "sd", coef = "Intercept", group = "set"),
+  # set_prior("", class = "sd", coef = "logTrial", group = "set"),
+  # set_prior("", class = "sd", coef = "GapTypeLab", group = "set"),
+  # set_prior("", class = "sd", coef = "SLxSL3", group = "set"),
+  # set_prior("", class = "sd", coef = "SLxSL3:GapTypeLab", group = "set")
 )
 
 
 
 
-                           prior = sim_priors, sample_prior = "only")
 
 ```
 
